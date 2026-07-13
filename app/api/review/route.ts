@@ -1,4 +1,4 @@
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 type Severity = "High" | "Medium" | "Low";
@@ -43,6 +43,71 @@ function stripCodeFences(text: string): string {
   return fenceMatch ? fenceMatch[1].trim() : trimmed;
 }
 
+const SEVERITIES: readonly string[] = ["High", "Medium", "Low"];
+
+const TEXT_FIELDS = [
+  "clause",
+  "plainEnglish",
+  "whyItMatters",
+  "questionToAsk",
+] as const;
+
+function describe(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "an array";
+  return typeof value;
+}
+
+function validateFlag(value: unknown, index: number): LeaseFlag {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(
+      `Gemini returned ${describe(value)} instead of a flag object at index ${index}.`
+    );
+  }
+
+  const flag = value as Record<string, unknown>;
+
+  for (const field of TEXT_FIELDS) {
+    const fieldValue = flag[field];
+    if (typeof fieldValue !== "string" || fieldValue.trim().length === 0) {
+      throw new Error(
+        `Gemini returned a flag missing '${field}' at index ${index}.`
+      );
+    }
+  }
+
+  if (typeof flag.severity !== "string" || !SEVERITIES.includes(flag.severity)) {
+    throw new Error(
+      `Gemini returned invalid severity at index ${index}: ${JSON.stringify(flag.severity)}.`
+    );
+  }
+
+  return {
+    clause: flag.clause as string,
+    severity: flag.severity as Severity,
+    plainEnglish: flag.plainEnglish as string,
+    whyItMatters: flag.whyItMatters as string,
+    questionToAsk: flag.questionToAsk as string,
+  };
+}
+
+function parseLeaseFlags(rawText: string): LeaseFlag[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stripCodeFences(rawText));
+  } catch {
+    throw new Error("Gemini returned a response that was not valid JSON.");
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error(
+      `Gemini returned ${describe(parsed)} instead of an array of flags.`
+    );
+  }
+
+  return parsed.map(validateFlag);
+}
+
 export async function POST(request: Request) {
   let body: { leaseText?: unknown };
   try {
@@ -85,7 +150,10 @@ export async function POST(request: Request) {
     });
 
     if (!geminiResponse.ok) {
-      throw new Error(`Gemini API returned status ${geminiResponse.status}`);
+      const details = await geminiResponse.text();
+      throw new Error(
+        `Gemini API returned status ${geminiResponse.status}: ${details}`
+      );
     }
 
     const geminiData = await geminiResponse.json();
@@ -96,8 +164,13 @@ export async function POST(request: Request) {
       throw new Error("Gemini API returned no content.");
     }
 
-    const cleaned = stripCodeFences(rawText);
-    const flags = JSON.parse(cleaned) as LeaseFlag[];
+    let flags: LeaseFlag[];
+    try {
+      flags = parseLeaseFlags(rawText);
+    } catch (validationError) {
+      console.error("Gemini raw response was:", rawText);
+      throw validationError;
+    }
 
     return Response.json(flags);
   } catch (error) {
