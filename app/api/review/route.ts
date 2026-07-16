@@ -34,7 +34,7 @@ What to flag — relevance filter:
 - Flag ONLY clauses that genuinely warrant the renter's attention: those carrying real financial risk, legal or rights implications, restrictions on the renter, or genuine ambiguity.
 - SKIP boilerplate and standard administrative content the renter does not need to act on. Do not flag definitions, signature blocks, standard legal recitals, severability/governing-law boilerplate, or routine notice mechanics.
 - Low severity still applies to substantive-but-minor clauses (e.g. routine utility responsibility, standard notice periods) — include those. It does NOT mean "flag every line of the document."
-- Prioritize by importance: return the most significant clauses first. If many clauses qualify, cap the output at roughly the top 8-10 flags so the renter is not overwhelmed by a long lease.
+- Prioritize by importance: list the most significant clauses first. Include any substantive Low-severity clauses that exist — do not omit them just because higher-severity clauses are present; the renter benefits from seeing that most of the lease is standard. The final list is trimmed downstream, so return every clause that passes this filter rather than pre-limiting the count.
 
 Critical rules:
 - Only flag clauses that are actually present in the provided lease text. Never invent, assume, or hallucinate clauses that are not there.
@@ -57,6 +57,31 @@ function stripCodeFences(text: string): string {
 }
 
 const SEVERITY_RANK: Record<Severity, number> = { High: 0, Medium: 1, Low: 2 };
+
+// Trim a long lease to a manageable list, but reserve slots so Low-severity
+// clauses aren't entirely pushed out by higher-severity ones — the renter
+// should still see that most of the lease is standard.
+const FLAG_CAP = 10;
+const RESERVED_LOW_SLOTS = 2;
+
+function capFlags(sorted: LeaseFlag[]): LeaseFlag[] {
+  if (sorted.length <= FLAG_CAP) return sorted;
+
+  const lows = sorted.filter((f) => f.severity === "Low");
+  const nonLows = sorted.filter((f) => f.severity !== "Low");
+
+  // Reserve slots for Lows so higher-severity clauses can't crowd them all
+  // out, then fill the rest with the top High/Medium clauses. Any slots the
+  // High/Medium clauses don't use are backfilled with more Lows.
+  const reserved = Math.min(lows.length, RESERVED_LOW_SLOTS);
+  const nonLowCount = Math.min(nonLows.length, FLAG_CAP - reserved);
+  const lowCount = Math.min(lows.length, FLAG_CAP - nonLowCount);
+
+  // Inputs are pre-sorted High -> Medium -> Low with importance order preserved
+  // within each tier, so slicing from the front keeps the highest-priority
+  // items, and concatenating keeps the final list sorted.
+  return [...nonLows.slice(0, nonLowCount), ...lows.slice(0, lowCount)];
+}
 
 const SEVERITIES: readonly string[] = ["High", "Medium", "Low"];
 
@@ -122,7 +147,7 @@ function parseLeaseFlags(rawText: string): LeaseFlag[] {
 
   const flags = parsed.map(validateFlag);
   flags.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
-  return flags;
+  return capFlags(flags);
 }
 
 export async function POST(request: Request) {
