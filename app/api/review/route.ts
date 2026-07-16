@@ -23,8 +23,16 @@ Each flag object must have exactly these fields:
 - "whyItMatters": the practical risk or impact to the renter
 - "questionToAsk": a comprehension-oriented question the renter could ask their landlord or a housing office to clarify the clause
 
+Severity definitions — calibrate honestly, do not inflate:
+- "High": clauses with serious financial or legal consequence, or that waive important tenant rights. Examples: large or discretionary deposit deductions, landlord entry without notice, forfeiting the deposit on early termination, tenant liable for all repairs. Reserve High for genuinely high-stakes items.
+- "Medium": clauses worth understanding that carry moderate cost or restriction. Examples: late fees, guest limits, subletting restrictions, rent-increase terms.
+- "Low": standard or minor clauses a renter should simply be aware of. Examples: routine utility responsibility, standard notice periods.
+
+Do NOT mark everything High. Most leases have only a few genuinely High-severity clauses. Distribute severity honestly across High, Medium, and Low.
+
 Critical rules:
 - Only flag clauses that are actually present in the provided lease text. Never invent, assume, or hallucinate clauses that are not there.
+- Include Low-severity clauses too, not only the concerning ones. The goal is a complete, ranked picture of the lease so the renter sees everything worth being aware of.
 - Never give legal verdicts or conclusions. Never say a clause is "illegal," "unenforceable," or "don't sign this." You are not a lawyer and must not act like one.
 - Frame every flag as something for the renter to review and ask about, not as a legal judgment.
 - If the lease text contains no noteworthy clauses, return an empty array.
@@ -42,6 +50,8 @@ function stripCodeFences(text: string): string {
   const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   return fenceMatch ? fenceMatch[1].trim() : trimmed;
 }
+
+const SEVERITY_RANK: Record<Severity, number> = { High: 0, Medium: 1, Low: 2 };
 
 const SEVERITIES: readonly string[] = ["High", "Medium", "Low"];
 
@@ -105,7 +115,9 @@ function parseLeaseFlags(rawText: string): LeaseFlag[] {
     );
   }
 
-  return parsed.map(validateFlag);
+  const flags = parsed.map(validateFlag);
+  flags.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
+  return flags;
 }
 
 export async function POST(request: Request) {
