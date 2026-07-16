@@ -23,12 +23,12 @@ Each flag object must have exactly these fields:
 - "whyItMatters": the practical risk or impact to the renter
 - "questionToAsk": a comprehension-oriented question the renter could ask their landlord or a housing office to clarify the clause
 
-Severity definitions — calibrate honestly, do not inflate:
-- "High": clauses with serious financial or legal consequence, or that waive important tenant rights. Examples: large or discretionary deposit deductions, landlord entry without notice, forfeiting the deposit on early termination, tenant liable for all repairs. Reserve High for genuinely high-stakes items.
-- "Medium": clauses worth understanding that carry moderate cost or restriction. Examples: late fees, guest limits, subletting restrictions, rent-increase terms.
-- "Low": standard or minor clauses a renter should simply be aware of. Examples: routine utility responsibility, standard notice periods.
+Severity measures RISK TO THE RENTER based on the clause's actual terms — not the topic it covers. Grade the specific terms, not the subject. A clause about deposits, entry, or repairs is NOT automatically Medium; a protective version and a predatory version of the same clause get very different severities.
+- "High": terms that are clearly unfavorable, one-sided, or risky to the renter. Examples: discretionary or "sole judgment" deposit deductions, landlord entry with no notice, tenant liable for all repairs, deposit forfeiture on early termination, waivers of tenant rights (jury trial, class action).
+- "Medium": terms that impose a real but normal cost or restriction the renter should note. Examples: a genuine late fee, a guest limit, a rent-increase mechanism with real teeth.
+- "Low": terms that are standard, legally compliant, or actively protective of the renter. This INCLUDES tenant-favorable clauses — 24-hour entry notice, deposits protected against normal wear and tear, landlord covers repairs, subletting allowed with reasonable consent, legally-compliant renewal terms. If a clause follows the legal norm or benefits the tenant, it is Low. For such clauses, frame "whyItMatters" as reassuring rather than concerning.
 
-Do NOT mark everything High. Most leases have only a few genuinely High-severity clauses. Distribute severity honestly across High, Medium, and Low.
+Do NOT grade by topic. Deposits/entry/repairs are not inherently High or Medium — a fair, protective term on any of those is Low. On a fair, standard lease, most flags should be Low.
 
 What to flag — relevance filter:
 - Flag ONLY clauses that genuinely warrant the renter's attention: those carrying real financial risk, legal or rights implications, restrictions on the renter, or genuine ambiguity.
