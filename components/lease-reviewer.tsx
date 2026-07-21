@@ -74,7 +74,13 @@ async function extractTextFromPdf(
   file: File
 ): Promise<{ text: string; pages: number }> {
   const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+  // Let the bundler resolve and emit the worker so it gets a hashed URL
+  // served with the correct JavaScript MIME type in production. A plain
+  // /public path can fail to load as a module worker on hosts like Vercel.
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url
+  ).toString();
 
   const data = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data }).promise;
@@ -481,7 +487,8 @@ export function LeaseReviewer() {
         tone: "info",
         text: `${file.name} loaded (${pages} ${pages === 1 ? "page" : "pages"}). Run the review to analyze it.`,
       });
-    } catch {
+    } catch (err) {
+      console.error("PDF extraction failed:", err);
       setPdfNotice({ tone: "warn", text: PDF_FAILED });
     } finally {
       setPdfBusy(false);
