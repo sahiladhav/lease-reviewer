@@ -21,7 +21,7 @@ type LeaseFlag = {
 type Status = "idle" | "loading" | "done" | "error";
 
 const DISCLAIMER =
-  "This is not legal advice — it flags clauses for your review.";
+  "This is not legal advice. It flags clauses for your review.";
 
 const SEVERITY_META: Record<
   Severity,
@@ -49,7 +49,7 @@ const SEVERITY_ORDER: Severity[] = ["High", "Medium", "Low"];
 const PDF_NOT_A_PDF =
   "That doesn't look like a PDF. Upload a .pdf file, or paste your lease text instead.";
 const PDF_UNREADABLE =
-  "We couldn't read text from this file — it may be a scanned image. Please paste your lease text instead.";
+  "We couldn't read text from this file. It may be a scanned image, so please paste your lease text instead.";
 const PDF_FAILED =
   "We couldn't open this PDF. Please paste your lease text instead.";
 
@@ -73,12 +73,13 @@ function looksReadable(text: string): boolean {
 async function extractTextFromPdf(
   file: File
 ): Promise<{ text: string; pages: number }> {
-  const pdfjs = await import("pdfjs-dist");
-  // Let the bundler resolve and emit the worker so it gets a hashed URL
-  // served with the correct JavaScript MIME type in production. A plain
-  // /public path can fail to load as a module worker on hosts like Vercel.
+  // Use the legacy build: it's transpiled for broad browser support, so
+  // extraction works in Safari too (the modern build uses newer JS that
+  // older Safari lacks). Let the bundler resolve and emit the worker so it
+  // gets a hashed URL served with the correct MIME type in production.
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
+    "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
     import.meta.url
   ).toString();
 
@@ -124,7 +125,7 @@ function UploadIcon({ className }: { className?: string }) {
 }
 
 // Hand-drawn-style line sketch of a row of four San Francisco "Painted
-// Ladies" — varied heights stepping up to the right, thin single-weight
+// Ladies", varied heights stepping up to the right, thin single-weight
 // monochrome ink strokes, no fill: gables, bay windows, doorways, steps.
 function HeroArt({ className }: { className?: string }) {
   const houses = [
@@ -289,7 +290,7 @@ function Reveal({
 }
 
 // Compact card: clause heading, severity, and a short one-line summary. The
-// whole card is the affordance — click (or Enter/Space) toggles the detail
+// whole card is the affordance, click (or Enter/Space) toggles the detail
 // open in place; no button or arrow.
 function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
   const [open, setOpen] = useState(false);
@@ -369,7 +370,7 @@ function Analyzing() {
       </div>
       <p className="mt-6 font-serif text-xl text-ink">Reading your lease…</p>
       <p className="mt-1.5 text-sm text-muted">
-        Going clause by clause — a few seconds.
+        Going clause by clause. Just a few seconds.
       </p>
     </PanelShell>
   );
@@ -382,7 +383,7 @@ function ResultsHeader({ count }: { count: number }) {
       : `We flagged ${count} ${count === 1 ? "item" : "items"} worth reviewing.`;
   const sub =
     count === 0
-      ? "This reads like a standard lease — but give it your own read."
+      ? "This reads like a standard lease, but give it your own read."
       : "Ordered by how much each one affects you.";
 
   return (
@@ -524,7 +525,7 @@ export function LeaseReviewer() {
         </div>
       </header>
 
-      {/* Input — centered above the results */}
+      {/* Input, centered above the results */}
       <section className="mx-auto w-full max-w-2xl px-6 pt-12 pb-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-medium text-ink">Your lease</span>
@@ -587,7 +588,7 @@ export function LeaseReviewer() {
         </Button>
       </section>
 
-      {/* Results — full-width, three across on desktop */}
+      {/* Results, full-width, three across on desktop */}
       {status !== "idle" && (
         <section
           ref={resultsRef}
@@ -606,7 +607,7 @@ export function LeaseReviewer() {
                   That didn&rsquo;t go through.
                 </h2>
                 <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
-                  We couldn&rsquo;t read this lease just now — it sometimes takes
+                  We couldn&rsquo;t read this lease just now. It sometimes takes
                   a second try.
                 </p>
                 <Button onClick={handleReview} size="sm" className="mt-6">
@@ -620,13 +621,19 @@ export function LeaseReviewer() {
             <div>
               <ResultsHeader count={flags.length} />
               {flags.length > 0 && (
-                <div className="mt-10 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {flags.map((flag, i) => (
-                    <FlagCard key={i} flag={flag} index={i} />
-                  ))}
-                </div>
+                <>
+                  <div className="mt-10 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {flags.map((flag, i) => (
+                      <FlagCard key={i} flag={flag} index={i} />
+                    ))}
+                  </div>
+                  <p className="mt-8 text-center text-sm text-muted">
+                    Open any card to read the full details, why it matters, and a
+                    question to ask.
+                  </p>
+                </>
               )}
-              <div className="mt-12 text-center">
+              <div className="mt-10 text-center">
                 <Button variant="link" size="sm" onClick={reset}>
                   Review another lease
                 </Button>

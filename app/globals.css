@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  /* Warm, editorial light palette — no stark white anywhere */
+  /* Warm, editorial light palette, no stark white anywhere */
   --color-canvas: #fbfaf6; /* page background */
-  --color-paper: #f6f3ec; /* hero — warmer off-white */
+  --color-paper: #f6f3ec; /* hero, warmer off-white */
   --color-card: #fffefb; /* cards, inputs */
   --color-ink: #211d18; /* headlines, primary */
   --color-body: #3a352d; /* body copy */
   --color-muted: #6f685c; /* secondary text */
   --color-hairline: #e7e1d5; /* borders, rules */
 
-  /* Severity — muted, editorial. Never full-saturation. */
+  /* Severity, muted, editorial. Never full-saturation. */
   --color-terracotta: #b04a34; /* High */
   --color-amber: #bd8a3a; /* Medium */
   --color-sage: #6f8b68; /* Low */
