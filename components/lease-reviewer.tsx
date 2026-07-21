@@ -277,8 +277,14 @@ export function LeaseReviewer() {
   const [leaseText, setLeaseText] = useState("");
   const [flags, setFlags] = useState<LeaseFlag[]>([]);
   const [status, setStatus] = useState<Status>("idle");
+  const [pdfText, setPdfText] = useState("");
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfNotice, setPdfNotice] = useState<PdfNotice | null>(null);
+
+  // What we actually send: typed text wins if present, otherwise the text
+  // extracted from an uploaded PDF (which never appears in the textarea).
+  const effectiveText = leaseText.trim().length > 0 ? leaseText : pdfText;
+  const canReview = effectiveText.trim().length > 0;
 
   const heroRef = useRef<HTMLElement>(null);
   const outputRef = useRef<HTMLElement>(null);
@@ -301,7 +307,8 @@ export function LeaseReviewer() {
   }, [status, scrollTo]);
 
   const handleReview = useCallback(async () => {
-    if (leaseText.trim().length === 0) return;
+    const text = effectiveText;
+    if (text.trim().length === 0) return;
     setStatus("loading");
     setFlags([]);
 
@@ -309,7 +316,7 @@ export function LeaseReviewer() {
       const res = await fetch("/api/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leaseText }),
+        body: JSON.stringify({ leaseText: text }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Something went wrong.");
@@ -318,11 +325,13 @@ export function LeaseReviewer() {
     } catch {
       setStatus("error");
     }
-  }, [leaseText]);
+  }, [effectiveText]);
 
   const reset = useCallback(() => {
     setStatus("idle");
     setFlags([]);
+    setPdfText("");
+    setPdfNotice(null);
     scrollTo(heroRef.current);
   }, [scrollTo]);
 
@@ -342,10 +351,10 @@ export function LeaseReviewer() {
         setPdfNotice({ tone: "warn", text: PDF_UNREADABLE });
         return;
       }
-      setLeaseText(text);
+      setPdfText(text);
       setPdfNotice({
         tone: "info",
-        text: `Loaded ${pages} ${pages === 1 ? "page" : "pages"} from ${file.name}. Review it below, then run the review.`,
+        text: `${file.name} loaded (${pages} ${pages === 1 ? "page" : "pages"}). Hit "Review my lease" to analyze it — or paste text above to use that instead.`,
       });
     } catch {
       setPdfNotice({ tone: "warn", text: PDF_FAILED });
@@ -424,7 +433,7 @@ export function LeaseReviewer() {
             <Button
               size="lg"
               onClick={handleReview}
-              disabled={status === "loading" || leaseText.trim().length === 0}
+              disabled={status === "loading" || !canReview}
               className="mt-4 w-full"
             >
               {status === "loading" ? "Reading…" : "Review my lease"}
