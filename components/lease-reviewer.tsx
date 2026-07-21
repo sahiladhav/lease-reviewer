@@ -196,9 +196,9 @@ function Reveal({
 function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
   const meta = SEVERITY_META[flag.severity];
   return (
-    <Reveal delay={Math.min(index, 6) * 55}>
+    <Reveal delay={Math.min(index, 6) * 55} className="h-full">
       <article
-        className="rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)]"
+        className="flex h-full flex-col rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)]"
         style={{ borderLeft: `3px solid ${meta.color}` }}
       >
         <div className="mb-2.5 flex items-center gap-2.5">
@@ -241,17 +241,6 @@ function PanelShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ResultsIdle() {
-  return (
-    <div className="flex min-h-[340px] flex-col items-center justify-center rounded-2xl border border-dashed border-hairline px-6 py-16 text-center">
-      <p className="font-serif text-xl text-ink">Your review will appear here.</p>
-      <p className="mt-2 max-w-[16rem] text-sm leading-6 text-muted">
-        Paste your lease or upload a PDF, then run the review.
-      </p>
-    </div>
-  );
-}
-
 function Analyzing() {
   return (
     <PanelShell>
@@ -282,13 +271,13 @@ function ResultsHeader({ count }: { count: number }) {
       : "Ordered by how much each one affects you.";
 
   return (
-    <div>
-      <h2 className="font-serif text-2xl leading-tight text-ink sm:text-3xl">
+    <div className="mx-auto max-w-2xl text-center">
+      <h2 className="font-serif text-3xl leading-tight text-ink sm:text-4xl">
         {headline}
       </h2>
-      <p className="mt-2 text-sm text-muted">{sub}</p>
+      <p className="mt-3 text-base text-muted">{sub}</p>
       {count > 0 && (
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
           {SEVERITY_ORDER.map((s) => (
             <span
               key={s}
@@ -324,15 +313,12 @@ export function LeaseReviewer() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // On narrow screens the results sit below the input, so bring them into view
-  // on submit. On desktop the panel is already beside the input — leave it.
+  // Results sit below the input, so bring them into view on submit.
   useEffect(() => {
     if (status === "idle") return;
-    if (window.matchMedia("(max-width: 1023px)").matches) {
-      requestAnimationFrame(() =>
-        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-      );
-    }
+    requestAnimationFrame(() =>
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
   }, [status]);
 
   const handleReview = useCallback(async () => {
@@ -410,78 +396,83 @@ export function LeaseReviewer() {
         </div>
       </header>
 
-      {/* Two-column workspace: input (left) · results (right) */}
-      <section className="mx-auto max-w-6xl px-6 py-12">
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-12">
-          {/* Left — input */}
-          <div className="lg:sticky lg:top-8">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm font-medium text-ink">Your lease</span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/pdf,.pdf"
-                className="hidden"
-                onChange={(e) => {
-                  handleFile(e.target.files?.[0]);
-                  e.target.value = "";
-                }}
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={pdfBusy}
-              >
-                <UploadIcon className="size-4" />
-                {pdfBusy ? "Reading PDF…" : "Upload a PDF"}
-              </Button>
-            </div>
+      {/* Input — centered above the results */}
+      <section className="mx-auto w-full max-w-2xl px-6 pt-12 pb-4">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-sm font-medium text-ink">Your lease</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={(e) => {
+              handleFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={pdfBusy}
+          >
+            <UploadIcon className="size-4" />
+            {pdfBusy ? "Reading PDF…" : "Upload a PDF"}
+          </Button>
+        </div>
 
-            <Textarea
-              value={leaseText}
-              onChange={(e) => setLeaseText(e.target.value)}
-              placeholder="Paste your lease here…"
-              rows={12}
-              aria-label="Lease text"
-              className="min-h-64"
+        <Textarea
+          value={leaseText}
+          onChange={(e) => setLeaseText(e.target.value)}
+          placeholder="Paste your lease here…"
+          rows={10}
+          aria-label="Lease text"
+          className="min-h-56"
+        />
+
+        {pdfNotice && (
+          <p
+            role="status"
+            className="mt-3 flex items-start gap-2.5 rounded-xl border border-hairline bg-card px-4 py-3 text-sm leading-6 text-muted"
+          >
+            <span
+              className="mt-2 size-1.5 shrink-0 rounded-full"
+              style={{
+                backgroundColor:
+                  pdfNotice.tone === "info"
+                    ? "var(--color-sage)"
+                    : "var(--color-amber)",
+              }}
+              aria-hidden
             />
+            {pdfNotice.text}
+          </p>
+        )}
 
-            {pdfNotice && (
-              <p
-                role="status"
-                className="mt-3 flex items-start gap-2.5 rounded-xl border border-hairline bg-card px-4 py-3 text-sm leading-6 text-muted"
-              >
-                <span
-                  className="mt-2 size-1.5 shrink-0 rounded-full"
-                  style={{
-                    backgroundColor:
-                      pdfNotice.tone === "info"
-                        ? "var(--color-sage)"
-                        : "var(--color-amber)",
-                  }}
-                  aria-hidden
-                />
-                {pdfNotice.text}
-              </p>
-            )}
+        <Button
+          size="lg"
+          onClick={handleReview}
+          disabled={status === "loading" || !canReview}
+          className="mt-4 w-full"
+        >
+          {status === "loading" ? "Reading…" : "Review my lease"}
+        </Button>
+      </section>
 
-            <Button
-              size="lg"
-              onClick={handleReview}
-              disabled={status === "loading" || !canReview}
-              className="mt-4 w-full"
-            >
-              {status === "loading" ? "Reading…" : "Review my lease"}
-            </Button>
-          </div>
+      {/* Results — full-width, three across on desktop */}
+      {status !== "idle" && (
+        <section
+          ref={resultsRef}
+          className="mx-auto w-full max-w-6xl scroll-mt-6 px-6 pt-10 pb-20"
+        >
+          {status === "loading" && (
+            <div className="mx-auto max-w-md">
+              <Analyzing />
+            </div>
+          )}
 
-          {/* Right — results, scrolls with the page while input stays put */}
-          <div ref={resultsRef} className="mt-10 lg:mt-0">
-            {status === "idle" && <ResultsIdle />}
-            {status === "loading" && <Analyzing />}
-
-            {status === "error" && (
+          {status === "error" && (
+            <div className="mx-auto max-w-md">
               <PanelShell>
                 <h2 className="font-serif text-xl text-ink">
                   That didn&rsquo;t go through.
@@ -494,28 +485,28 @@ export function LeaseReviewer() {
                   Try again
                 </Button>
               </PanelShell>
-            )}
+            </div>
+          )}
 
-            {status === "done" && (
-              <div>
-                <ResultsHeader count={flags.length} />
-                {flags.length > 0 && (
-                  <div className="mt-6 flex flex-col gap-4">
-                    {flags.map((flag, i) => (
-                      <FlagCard key={i} flag={flag} index={i} />
-                    ))}
-                  </div>
-                )}
-                <div className="mt-8">
-                  <Button variant="link" size="sm" onClick={reset}>
-                    Review another lease
-                  </Button>
+          {status === "done" && (
+            <div>
+              <ResultsHeader count={flags.length} />
+              {flags.length > 0 && (
+                <div className="mt-10 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {flags.map((flag, i) => (
+                    <FlagCard key={i} flag={flag} index={i} />
+                  ))}
                 </div>
+              )}
+              <div className="mt-12 text-center">
+                <Button variant="link" size="sm" onClick={reset}>
+                  Review another lease
+                </Button>
               </div>
-            )}
-          </div>
-        </div>
-      </section>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Bottom disclaimer */}
       <footer className="border-t border-hairline">
