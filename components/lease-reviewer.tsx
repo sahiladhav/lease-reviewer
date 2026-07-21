@@ -388,12 +388,22 @@ export function LeaseReviewer() {
           <h1 className="mx-auto mt-6 max-w-3xl text-center font-serif text-4xl font-light leading-[1.05] tracking-[-0.02em] text-ink sm:text-6xl">
             Know what you&rsquo;re signing.
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-base leading-7 text-muted sm:text-lg">
-            Paste your lease text or upload the PDF. You&rsquo;ll get the clauses
-            worth a closer look — deposit, entry, repairs, fees — each explained
-            in plain English, with why it matters and a question to ask before
-            you sign.
-          </p>
+          <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2.5 text-left text-base text-muted sm:text-lg">
+            {[
+              "Paste your lease text, or upload the PDF.",
+              "Get the clauses worth a closer look, in plain English.",
+              "See why each one matters, with a question to ask before you sign.",
+            ].map((point) => (
+              <li key={point} className="flex items-start gap-3">
+                <span
+                  className="mt-2.5 size-1.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: "var(--color-sage)" }}
+                  aria-hidden
+                />
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
           <HeroArt className="mx-auto mt-8 w-full max-w-2xl" />
         </div>
       </header>
