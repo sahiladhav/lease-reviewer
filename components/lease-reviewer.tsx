@@ -504,11 +504,11 @@ export function LeaseReviewer() {
           <h1 className="mx-auto mt-6 max-w-3xl text-center font-serif text-4xl font-light leading-[1.05] tracking-[-0.02em] text-ink sm:text-6xl">
             Know what you&rsquo;re signing.
           </h1>
-          <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2.5 text-left text-base text-muted sm:text-lg">
+          <ul className="mx-auto mt-7 flex max-w-lg flex-col gap-5 text-left text-base text-muted sm:text-lg">
             {[
-              "Paste your lease text, or upload the PDF.",
-              "Get the clauses worth a closer look, in plain English.",
-              "See why each one matters, with a question to ask before you sign.",
+              "Paste your lease, or upload the PDF.",
+              "See the clauses worth a closer look, in plain English.",
+              "Learn why each one matters, and what to ask.",
             ].map((point) => (
               <li key={point} className="flex items-start gap-3">
                 <span

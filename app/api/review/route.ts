@@ -25,6 +25,13 @@ Each flag object must have exactly these fields:
 - "whyItMatters": the practical risk or impact to the renter
 - "questionToAsk": a comprehension-oriented question the renter could ask their landlord or a housing office to clarify the clause
 
+Writing style — applies to headline, plainEnglish, whyItMatters, and questionToAsk:
+- Write at roughly an 8th-grade reading level. Use everyday words and short sentences.
+- Use active voice. Say "The landlord can keep your deposit," not "The deposit may be retained."
+- Keep sentences under ~20 words where you can.
+- Avoid legal jargon entirely. If a legal term is unavoidable, explain it right away in plain words.
+- Write like you're explaining it to a friend who has never signed a lease — not like a lawyer or a textbook.
+
 Severity measures RISK TO THE RENTER based on the clause's actual terms — not the topic it covers. Grade the specific terms, not the subject. A clause about deposits, entry, or repairs is NOT automatically Medium; a protective version and a predatory version of the same clause get very different severities.
 - "High": terms that are clearly unfavorable, one-sided, or risky to the renter. Examples: discretionary or "sole judgment" deposit deductions, landlord entry with no notice, tenant liable for all repairs, deposit forfeiture on early termination, waivers of tenant rights (jury trial, class action).
 - "Medium": terms that impose a real but normal cost or restriction the renter should note. Examples: a genuine late fee, a guest limit, a rent-increase mechanism with real teeth.
