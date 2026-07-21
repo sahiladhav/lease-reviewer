@@ -118,77 +118,124 @@ function UploadIcon({ className }: { className?: string }) {
 }
 
 // Hand-drawn-style line sketch of a row of four San Francisco "Painted
-// Ladies" — thin single-weight strokes, no fill, monochrome ink.
+// Ladies" — varied heights stepping up to the right, thin single-weight
+// monochrome ink strokes, no fill: gables, bay windows, doorways, steps.
 function HeroArt({ className }: { className?: string }) {
   const houses = [
-    { x: 150, apex: 78, finial: true },
-    { x: 350, apex: 70, finial: false },
-    { x: 550, apex: 76, finial: true },
-    { x: 750, apex: 72, finial: false },
+    { x: 150, w: 180, base: 298, eave: 158, apex: 110, finial: false },
+    { x: 330, w: 192, base: 292, eave: 140, apex: 86, finial: true },
+    { x: 522, w: 192, base: 286, eave: 132, apex: 78, finial: false },
+    { x: 714, w: 212, base: 280, eave: 112, apex: 52, finial: true },
   ];
 
-  const house = (x: number, apex: number): string[] => [
-    // gabled roof + cornice
-    `M${x} 128 L${x + 100} ${apex} L${x + 200} 128`,
-    `M${x} 128 L${x + 200} 128`,
-    // walls + floor
-    `M${x} 128 L${x} 268`,
-    `M${x + 200} 128 L${x + 200} 268`,
-    `M${x} 268 L${x + 200} 268`,
-    // belt cornice between floors
-    `M${x} 202 L${x + 200} 202`,
-    // two upper sash windows
-    `M${x + 38} 150 L${x + 74} 150 L${x + 74} 192 L${x + 38} 192 Z`,
-    `M${x + 56} 150 L${x + 56} 192`,
-    `M${x + 34} 146 L${x + 78} 146`,
-    `M${x + 126} 150 L${x + 162} 150 L${x + 162} 192 L${x + 126} 192 Z`,
-    `M${x + 144} 150 L${x + 144} 192`,
-    `M${x + 122} 146 L${x + 166} 146`,
-    // arched doorway + front steps
-    `M${x + 24} 258 L${x + 24} 226 Q${x + 24} 216 ${x + 34} 216 L${x + 44} 216 Q${x + 54} 216 ${x + 54} 226 L${x + 54} 258`,
-    `M${x + 18} 268 L${x + 60} 268`,
-    `M${x + 21} 263 L${x + 57} 263`,
-    // projecting bay window with its own little roof
-    `M${x + 78} 212 L${x + 86} 204 L${x + 150} 204 L${x + 158} 212`,
-    `M${x + 78} 212 L${x + 78} 262`,
-    `M${x + 158} 212 L${x + 158} 262`,
-    `M${x + 78} 212 L${x + 158} 212`,
-    `M${x + 74} 262 L${x + 162} 262`,
-    `M${x + 105} 212 L${x + 105} 262`,
-    `M${x + 131} 212 L${x + 131} 262`,
+  // A four-pane window with a lintel above.
+  const win = (x: number, y: number, w: number, h: number): string[] => [
+    `M${x} ${y} L${x + w} ${y} L${x + w} ${y + h} L${x} ${y + h} Z`,
+    `M${x + w / 2} ${y} L${x + w / 2} ${y + h}`,
+    `M${x} ${y + h / 2} L${x + w} ${y + h / 2}`,
+    `M${x - 3} ${y - 4} L${x + w + 3} ${y - 4}`,
   ];
+
+  const house = ({
+    x,
+    w,
+    base,
+    eave,
+    apex,
+  }: (typeof houses)[number]): string[] => {
+    const fh = (base - eave) / 3;
+    const yB = eave + fh;
+    const yC = eave + 2 * fh;
+    const cx = x + w / 2;
+    const p: string[] = [];
+
+    // gabled roof + double cornice
+    p.push(`M${x - 4} ${eave} L${cx} ${apex} L${x + w + 4} ${eave}`);
+    p.push(`M${x} ${eave} L${x + w} ${eave}`);
+    p.push(`M${x + 4} ${eave + 7} L${x + w - 4} ${eave + 7}`);
+    // walls, floor, and floor dividers
+    p.push(`M${x} ${eave} L${x} ${base}`);
+    p.push(`M${x + w} ${eave} L${x + w} ${base}`);
+    p.push(`M${x} ${base} L${x + w} ${base}`);
+    p.push(`M${x} ${yB} L${x + w} ${yB}`);
+    p.push(`M${x} ${yC} L${x + w} ${yC}`);
+
+    // top floor: two windows
+    const aW = w * 0.2;
+    const aY = eave + fh * 0.3;
+    const aH = fh * 0.46;
+    p.push(...win(x + w * 0.15, aY, aW, aH));
+    p.push(...win(x + w * 0.85 - aW, aY, aW, aH));
+
+    // middle floor: projecting bay window with its own cornice
+    const bayW = w * 0.64;
+    const bx = x + (w - bayW) / 2;
+    const bTop = yB + fh * 0.2;
+    const bBot = yC - fh * 0.04;
+    const bMid = (bTop + bBot) / 2;
+    p.push(
+      `M${bx - 4} ${bTop} L${bx + 8} ${bTop - 9} L${bx + bayW - 8} ${bTop - 9} L${bx + bayW + 4} ${bTop}`
+    );
+    p.push(`M${bx} ${bTop} L${bx} ${bBot}`);
+    p.push(`M${bx + bayW} ${bTop} L${bx + bayW} ${bBot}`);
+    p.push(`M${bx} ${bTop} L${bx + bayW} ${bTop}`);
+    p.push(`M${bx} ${bBot} L${bx + bayW} ${bBot}`);
+    p.push(`M${bx + bayW / 3} ${bTop} L${bx + bayW / 3} ${bBot}`);
+    p.push(`M${bx + (2 * bayW) / 3} ${bTop} L${bx + (2 * bayW) / 3} ${bBot}`);
+    p.push(`M${bx} ${bMid} L${bx + bayW} ${bMid}`);
+
+    // ground floor: arched doorway with steps + one window
+    const dW = w * 0.17;
+    const dx = x + w * 0.13;
+    const dTop = yC + fh * 0.22;
+    const dBot = base - 4;
+    p.push(
+      `M${dx} ${dBot} L${dx} ${dTop + 10} Q${dx} ${dTop} ${dx + dW / 2} ${dTop} Q${dx + dW} ${dTop} ${dx + dW} ${dTop + 10} L${dx + dW} ${dBot}`
+    );
+    p.push(`M${dx + dW / 2} ${dTop + 6} L${dx + dW / 2} ${dBot}`);
+    p.push(`M${dx - 6} ${base} L${dx + dW + 6} ${base}`);
+    p.push(`M${dx - 3} ${base - 4} L${dx + dW + 3} ${base - 4}`);
+    p.push(...win(x + w * 0.54, yC + fh * 0.26, w * 0.26, fh * 0.42));
+
+    return p;
+  };
 
   return (
     <svg
       className={className}
-      viewBox="0 40 1120 250"
+      viewBox="0 30 1120 300"
       role="img"
-      aria-label="Line sketch of four Victorian row houses"
+      aria-label="Line sketch of a row of four Victorian houses"
       style={{ color: "var(--color-ink)" }}
     >
       <g
         fill="none"
         stroke="currentColor"
-        strokeOpacity="0.5"
+        strokeOpacity="0.62"
         strokeWidth="1.3"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        {houses.flatMap((h) =>
-          house(h.x, h.apex).map((d, i) => <path key={`${h.x}-${i}`} d={d} />)
+        {houses.flatMap((h, hi) =>
+          house(h).map((d, i) => <path key={`${hi}-${i}`} d={d} />)
         )}
         {houses
           .filter((h) => h.finial)
-          .map((h) => (
+          .map((h, i) => (
             <path
-              key={`fin-${h.x}`}
-              d={`M${h.x + 100} ${h.apex} L${h.x + 100} ${h.apex - 10}`}
+              key={`fin-${i}`}
+              d={`M${h.x + h.w / 2} ${h.apex} L${h.x + h.w / 2} ${h.apex - 12}`}
             />
           ))}
-        {houses.map((h) => (
-          <circle key={`vent-${h.x}`} cx={h.x + 100} cy={h.apex + 28} r="5.5" />
+        {houses.map((h, i) => (
+          <circle
+            key={`vent-${i}`}
+            cx={h.x + h.w / 2}
+            cy={h.apex + (h.eave - h.apex) * 0.46}
+            r="5"
+          />
         ))}
-        <path d="M96 273 L1024 267" strokeOpacity="0.35" />
+        <path d="M76 306 L1044 274" strokeOpacity="0.5" />
       </g>
     </svg>
   );
@@ -235,37 +282,17 @@ function Reveal({
   );
 }
 
-function ChevronIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  );
-}
-
-// Compact by default — clause, severity, and a one-line headline stating the
-// stake — with the detail behind a toggle so a card scans in a few seconds
-// and only expands what the reader cares about.
+// Compact card: clause heading, severity, and a short one-line summary.
 function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
-  const [open, setOpen] = useState(false);
   const meta = SEVERITY_META[flag.severity];
 
   return (
-    <Reveal delay={Math.min(index, 6) * 55}>
+    <Reveal delay={Math.min(index, 6) * 55} className="h-full">
       <article
-        className="flex min-h-[10.5rem] flex-col rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)]"
+        className="flex h-full flex-col rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)]"
         style={{ borderLeft: `3px solid ${meta.color}` }}
       >
-        <div className="mb-2.5 flex items-center gap-2.5">
+        <div className="mb-2 flex items-center gap-2.5">
           <span
             className="size-2.5 shrink-0 rounded-full"
             style={{ backgroundColor: meta.color }}
@@ -278,37 +305,7 @@ function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
             {meta.note}
           </span>
         </div>
-
-        <p className="text-[0.9375rem] leading-6 text-body">{flag.headline}</p>
-
-        {open && (
-          <dl className="mt-3 space-y-2 border-t border-hairline pt-3 text-sm leading-6">
-            <div>
-              <dt className="inline font-medium text-ink">In plain English. </dt>
-              <dd className="inline text-body">{flag.plainEnglish}</dd>
-            </div>
-            <div>
-              <dt className="inline font-medium text-ink">Why it matters. </dt>
-              <dd className="inline text-body">{flag.whyItMatters}</dd>
-            </div>
-            <div>
-              <dt className="inline font-medium text-ink">Question to ask. </dt>
-              <dd className="inline text-body">{flag.questionToAsk}</dd>
-            </div>
-          </dl>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="mt-auto flex items-center gap-1 pt-4 text-xs font-medium text-muted transition-colors hover:text-ink"
-        >
-          {open ? "See less" : "See more"}
-          <ChevronIcon
-            className={cn("size-3.5 transition-transform", open && "rotate-180")}
-          />
-        </button>
+        <p className="text-sm leading-6 text-body">{flag.headline}</p>
       </article>
     </Reveal>
   );
@@ -585,7 +582,7 @@ export function LeaseReviewer() {
             <div>
               <ResultsHeader count={flags.length} />
               {flags.length > 0 && (
-                <div className="mt-10 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-10 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {flags.map((flag, i) => (
                     <FlagCard key={i} flag={flag} index={i} />
                   ))}

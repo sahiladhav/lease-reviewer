@@ -20,7 +20,7 @@ Read the lease text below and identify clauses worth the renter's attention. Ret
 Each flag object must have exactly these fields:
 - "clause": a short label for the clause (string)
 - "severity": one of "High", "Medium", or "Low"
-- "headline": a single punchy sentence, max ~12 words, stating the practical consequence to the renter in plain language. Write it as what this means for THEM, not what the clause says — land the stake, do not summarize. For Low/standard clauses, keep it reassuring. Examples: "Your landlord can enter without telling you first." / "You could lose your entire deposit if you leave early." / "You pay for repairs — even ones you didn't cause." / "Standard 24-hour notice — this one's normal."
+- "headline": a very short, punchy line stating the practical consequence to the renter. Max ~8 words. Write what it means for THEM, not what the clause says. Do not use em dashes. Keep it reassuring for Low/standard clauses. Examples: "Your landlord can enter without warning." / "You could lose your whole deposit if you leave early." / "You pay for repairs you didn't cause." / "Standard 24-hour notice, this one is normal."
 - "plainEnglish": what the clause says, explained in simple terms
 - "whyItMatters": the practical risk or impact to the renter
 - "questionToAsk": a comprehension-oriented question the renter could ask their landlord or a housing office to clarify the clause
