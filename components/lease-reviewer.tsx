@@ -12,6 +12,7 @@ type Severity = "High" | "Medium" | "Low";
 type LeaseFlag = {
   clause: string;
   severity: Severity;
+  headline: string;
   plainEnglish: string;
   whyItMatters: string;
   questionToAsk: string;
@@ -116,36 +117,78 @@ function UploadIcon({ className }: { className?: string }) {
   );
 }
 
-// Editorial line-art arcade — soft, architectural, not a stock photo.
+// Hand-drawn-style line sketch of a row of four San Francisco "Painted
+// Ladies" — thin single-weight strokes, no fill, monochrome ink.
 function HeroArt({ className }: { className?: string }) {
-  const columns = [140, 308, 476, 644, 812, 980];
-  const springY = 150;
-  const baseY = 224;
-  const r = 84;
+  const houses = [
+    { x: 150, apex: 78, finial: true },
+    { x: 350, apex: 70, finial: false },
+    { x: 550, apex: 76, finial: true },
+    { x: 750, apex: 72, finial: false },
+  ];
+
+  const house = (x: number, apex: number): string[] => [
+    // gabled roof + cornice
+    `M${x} 128 L${x + 100} ${apex} L${x + 200} 128`,
+    `M${x} 128 L${x + 200} 128`,
+    // walls + floor
+    `M${x} 128 L${x} 268`,
+    `M${x + 200} 128 L${x + 200} 268`,
+    `M${x} 268 L${x + 200} 268`,
+    // belt cornice between floors
+    `M${x} 202 L${x + 200} 202`,
+    // two upper sash windows
+    `M${x + 38} 150 L${x + 74} 150 L${x + 74} 192 L${x + 38} 192 Z`,
+    `M${x + 56} 150 L${x + 56} 192`,
+    `M${x + 34} 146 L${x + 78} 146`,
+    `M${x + 126} 150 L${x + 162} 150 L${x + 162} 192 L${x + 126} 192 Z`,
+    `M${x + 144} 150 L${x + 144} 192`,
+    `M${x + 122} 146 L${x + 166} 146`,
+    // arched doorway + front steps
+    `M${x + 24} 258 L${x + 24} 226 Q${x + 24} 216 ${x + 34} 216 L${x + 44} 216 Q${x + 54} 216 ${x + 54} 226 L${x + 54} 258`,
+    `M${x + 18} 268 L${x + 60} 268`,
+    `M${x + 21} 263 L${x + 57} 263`,
+    // projecting bay window with its own little roof
+    `M${x + 78} 212 L${x + 86} 204 L${x + 150} 204 L${x + 158} 212`,
+    `M${x + 78} 212 L${x + 78} 262`,
+    `M${x + 158} 212 L${x + 158} 262`,
+    `M${x + 78} 212 L${x + 158} 212`,
+    `M${x + 74} 262 L${x + 162} 262`,
+    `M${x + 105} 212 L${x + 105} 262`,
+    `M${x + 131} 212 L${x + 131} 262`,
+  ];
+
   return (
     <svg
       className={className}
-      viewBox="0 0 1120 260"
+      viewBox="0 40 1120 250"
       role="img"
-      aria-label="Illustration of an arched colonnade"
+      aria-label="Line sketch of four Victorian row houses"
       style={{ color: "var(--color-ink)" }}
     >
-      <circle cx="560" cy="116" r="140" fill="var(--color-sage)" opacity="0.07" />
       <g
         fill="none"
         stroke="currentColor"
-        strokeOpacity="0.4"
-        strokeWidth="1.5"
+        strokeOpacity="0.5"
+        strokeWidth="1.3"
         strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        {columns.slice(0, -1).map((x) => (
-          <path key={`arch-${x}`} d={`M${x} ${springY} A${r} ${r} 0 0 1 ${x + 168} ${springY}`} />
+        {houses.flatMap((h) =>
+          house(h.x, h.apex).map((d, i) => <path key={`${h.x}-${i}`} d={d} />)
+        )}
+        {houses
+          .filter((h) => h.finial)
+          .map((h) => (
+            <path
+              key={`fin-${h.x}`}
+              d={`M${h.x + 100} ${h.apex} L${h.x + 100} ${h.apex - 10}`}
+            />
+          ))}
+        {houses.map((h) => (
+          <circle key={`vent-${h.x}`} cx={h.x + 100} cy={h.apex + 28} r="5.5" />
         ))}
-        {columns.map((x) => (
-          <path key={`col-${x}`} d={`M${x} ${springY} L${x} ${baseY}`} />
-        ))}
-        <path d={`M104 ${baseY} L1016 ${baseY}`} />
-        <path d="M88 238 L1032 238" strokeOpacity="0.25" />
+        <path d="M96 273 L1024 267" strokeOpacity="0.35" />
       </g>
     </svg>
   );
@@ -192,13 +235,34 @@ function Reveal({
   );
 }
 
-// Condensed, scannable flag: title + severity dot up top, three short lines.
-function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
-  const meta = SEVERITY_META[flag.severity];
+function ChevronIcon({ className }: { className?: string }) {
   return (
-    <Reveal delay={Math.min(index, 6) * 55} className="h-full">
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+// Compact by default — clause, severity, and a one-line headline stating the
+// stake — with the detail behind a toggle so a card scans in a few seconds
+// and only expands what the reader cares about.
+function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
+  const [open, setOpen] = useState(false);
+  const meta = SEVERITY_META[flag.severity];
+
+  return (
+    <Reveal delay={Math.min(index, 6) * 55}>
       <article
-        className="flex h-full flex-col rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)]"
+        className="flex min-h-[10.5rem] flex-col rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)]"
         style={{ borderLeft: `3px solid ${meta.color}` }}
       >
         <div className="mb-2.5 flex items-center gap-2.5">
@@ -214,20 +278,37 @@ function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
             {meta.note}
           </span>
         </div>
-        <dl className="space-y-1.5 text-sm leading-6">
-          <div>
-            <dt className="inline font-medium text-ink">In plain English. </dt>
-            <dd className="inline text-body">{flag.plainEnglish}</dd>
-          </div>
-          <div>
-            <dt className="inline font-medium text-ink">Why it matters. </dt>
-            <dd className="inline text-body">{flag.whyItMatters}</dd>
-          </div>
-          <div>
-            <dt className="inline font-medium text-ink">Question to ask. </dt>
-            <dd className="inline text-body">{flag.questionToAsk}</dd>
-          </div>
-        </dl>
+
+        <p className="text-[0.9375rem] leading-6 text-body">{flag.headline}</p>
+
+        {open && (
+          <dl className="mt-3 space-y-2 border-t border-hairline pt-3 text-sm leading-6">
+            <div>
+              <dt className="inline font-medium text-ink">In plain English. </dt>
+              <dd className="inline text-body">{flag.plainEnglish}</dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-ink">Why it matters. </dt>
+              <dd className="inline text-body">{flag.whyItMatters}</dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-ink">Question to ask. </dt>
+              <dd className="inline text-body">{flag.questionToAsk}</dd>
+            </div>
+          </dl>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="mt-auto flex items-center gap-1 pt-4 text-xs font-medium text-muted transition-colors hover:text-ink"
+        >
+          {open ? "See less" : "See more"}
+          <ChevronIcon
+            className={cn("size-3.5 transition-transform", open && "rotate-180")}
+          />
+        </button>
       </article>
     </Reveal>
   );
@@ -504,7 +585,7 @@ export function LeaseReviewer() {
             <div>
               <ResultsHeader count={flags.length} />
               {flags.length > 0 && (
-                <div className="mt-10 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-10 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {flags.map((flag, i) => (
                     <FlagCard key={i} flag={flag} index={i} />
                   ))}

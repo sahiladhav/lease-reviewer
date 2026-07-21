@@ -6,6 +6,7 @@ type Severity = "High" | "Medium" | "Low";
 type LeaseFlag = {
   clause: string;
   severity: Severity;
+  headline: string;
   plainEnglish: string;
   whyItMatters: string;
   questionToAsk: string;
@@ -19,6 +20,7 @@ Read the lease text below and identify clauses worth the renter's attention. Ret
 Each flag object must have exactly these fields:
 - "clause": a short label for the clause (string)
 - "severity": one of "High", "Medium", or "Low"
+- "headline": a single punchy sentence, max ~12 words, stating the practical consequence to the renter in plain language. Write it as what this means for THEM, not what the clause says — land the stake, do not summarize. For Low/standard clauses, keep it reassuring. Examples: "Your landlord can enter without telling you first." / "You could lose your entire deposit if you leave early." / "You pay for repairs — even ones you didn't cause." / "Standard 24-hour notice — this one's normal."
 - "plainEnglish": what the clause says, explained in simple terms
 - "whyItMatters": the practical risk or impact to the renter
 - "questionToAsk": a comprehension-oriented question the renter could ask their landlord or a housing office to clarify the clause
@@ -87,6 +89,7 @@ const SEVERITIES: readonly string[] = ["High", "Medium", "Low"];
 
 const TEXT_FIELDS = [
   "clause",
+  "headline",
   "plainEnglish",
   "whyItMatters",
   "questionToAsk",
@@ -125,6 +128,7 @@ function validateFlag(value: unknown, index: number): LeaseFlag {
   return {
     clause: flag.clause as string,
     severity: flag.severity as Severity,
+    headline: flag.headline as string,
     plainEnglish: flag.plainEnglish as string,
     whyItMatters: flag.whyItMatters as string,
     questionToAsk: flag.questionToAsk as string,
