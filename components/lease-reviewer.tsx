@@ -622,15 +622,15 @@ export function LeaseReviewer() {
               <ResultsHeader count={flags.length} />
               {flags.length > 0 && (
                 <>
-                  <div className="mt-10 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  <p className="mt-6 text-center text-sm text-muted">
+                    Open any card to read the full details, why it matters, and a
+                    question to ask.
+                  </p>
+                  <div className="mt-6 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {flags.map((flag, i) => (
                       <FlagCard key={i} flag={flag} index={i} />
                     ))}
                   </div>
-                  <p className="mt-8 text-center text-sm text-muted">
-                    Open any card to read the full details, why it matters, and a
-                    question to ask.
-                  </p>
                 </>
               )}
               <div className="mt-10 text-center">
