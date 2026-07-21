@@ -282,14 +282,28 @@ function Reveal({
   );
 }
 
-// Compact card: clause heading, severity, and a short one-line summary.
+// Compact card: clause heading, severity, and a short one-line summary. The
+// whole card is the affordance — click (or Enter/Space) toggles the detail
+// open in place; no button or arrow.
 function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
+  const [open, setOpen] = useState(false);
   const meta = SEVERITY_META[flag.severity];
+  const toggle = () => setOpen((v) => !v);
 
   return (
-    <Reveal delay={Math.min(index, 6) * 55} className="h-full">
+    <Reveal delay={Math.min(index, 6) * 55}>
       <article
-        className="flex h-full flex-col rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)]"
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        }}
+        className="flex min-h-32 cursor-pointer flex-col rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)] outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-ink/15 hover:shadow-[0_8px_24px_rgba(33,29,24,0.08)] focus-visible:ring-2 focus-visible:ring-ink/20"
         style={{ borderLeft: `3px solid ${meta.color}` }}
       >
         <div className="mb-2 flex items-center gap-2.5">
@@ -306,6 +320,23 @@ function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
           </span>
         </div>
         <p className="text-sm leading-6 text-body">{flag.headline}</p>
+
+        {open && (
+          <dl className="mt-4 space-y-2 border-t border-hairline pt-4 text-sm leading-6">
+            <div>
+              <dt className="inline font-medium text-ink">In plain English. </dt>
+              <dd className="inline text-body">{flag.plainEnglish}</dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-ink">Why it matters. </dt>
+              <dd className="inline text-body">{flag.whyItMatters}</dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-ink">Question to ask. </dt>
+              <dd className="inline text-body">{flag.questionToAsk}</dd>
+            </div>
+          </dl>
+        )}
       </article>
     </Reveal>
   );
@@ -582,7 +613,7 @@ export function LeaseReviewer() {
             <div>
               <ResultsHeader count={flags.length} />
               {flags.length > 0 && (
-                <div className="mt-10 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-10 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {flags.map((flag, i) => (
                     <FlagCard key={i} flag={flag} index={i} />
                   ))}
