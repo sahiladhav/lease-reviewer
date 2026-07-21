@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Warm, editorial light palette — no stark white anywhere */
+  --color-canvas: #fbfaf6; /* page background */
+  --color-paper: #f6f3ec; /* hero — warmer off-white */
+  --color-card: #fffefb; /* cards, inputs */
+  --color-ink: #211d18; /* headlines, primary */
+  --color-body: #3a352d; /* body copy */
+  --color-muted: #6f685c; /* secondary text */
+  --color-hairline: #e7e1d5; /* borders, rules */
+
+  /* Severity — muted, editorial. Never full-saturation. */
+  --color-terracotta: #b04a34; /* High */
+  --color-amber: #bd8a3a; /* Medium */
+  --color-sage: #6f8b68; /* Low */
+
+  --font-serif: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+
+  --animate-track: track 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  --animate-breathe: breathe 2.6s ease-in-out infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes track {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
   }
 }
 
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-body);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Scroll-reveal primitive: fade + rise, honored only when JS opts in */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

@@ -1,0 +1,340 @@
+"use client";
+
+import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+
+type Severity = "High" | "Medium" | "Low";
+
+type LeaseFlag = {
+  clause: string;
+  severity: Severity;
+  plainEnglish: string;
+  whyItMatters: string;
+  questionToAsk: string;
+};
+
+type Status = "idle" | "loading" | "done" | "error";
+
+const DISCLAIMER =
+  "This is not legal advice — it flags clauses for your review.";
+
+const SEVERITY_META: Record<
+  Severity,
+  { label: string; color: string; note: string }
+> = {
+  High: {
+    label: "Worth a closer look",
+    color: "var(--color-terracotta)",
+    note: "High",
+  },
+  Medium: {
+    label: "Good to understand",
+    color: "var(--color-amber)",
+    note: "Medium",
+  },
+  Low: {
+    label: "Standard",
+    color: "var(--color-sage)",
+    note: "Low",
+  },
+};
+
+const SEVERITY_ORDER: Severity[] = ["High", "Medium", "Low"];
+
+/* Fade-and-rise wrapper, triggered once as it scrolls into view. */
+function Reveal({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={cn("reveal", className)}
+      data-visible={visible}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SeverityTag({ severity }: { severity: Severity }) {
+  const meta = SEVERITY_META[severity];
+  return (
+    <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-muted">
+      <span
+        className="size-2 rounded-full"
+        style={{ backgroundColor: meta.color }}
+        aria-hidden
+      />
+      {meta.label}
+    </span>
+  );
+}
+
+function FlagField({ label, children }: { label: string; children: string }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+        {label}
+      </p>
+      <p className="text-[1.0625rem] leading-8 text-body">{children}</p>
+    </div>
+  );
+}
+
+function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
+  const meta = SEVERITY_META[flag.severity];
+  return (
+    <Reveal delay={Math.min(index, 5) * 70}>
+      <article
+        className="rounded-3xl border border-hairline bg-card p-8 shadow-[0_1px_2px_rgba(33,29,24,0.03)] sm:p-10"
+        style={{ borderLeft: `3px solid ${meta.color}` }}
+      >
+        <header className="mb-6 flex flex-col gap-3 border-b border-hairline pb-6">
+          <SeverityTag severity={flag.severity} />
+          <h3 className="font-serif text-2xl leading-tight text-ink sm:text-[1.75rem]">
+            {flag.clause}
+          </h3>
+        </header>
+        <div className="flex flex-col gap-6">
+          <FlagField label="In plain English">{flag.plainEnglish}</FlagField>
+          <FlagField label="Why it matters to you">
+            {flag.whyItMatters}
+          </FlagField>
+          <FlagField label="A question to ask">{flag.questionToAsk}</FlagField>
+        </div>
+      </article>
+    </Reveal>
+  );
+}
+
+function Analyzing() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <div className="w-full max-w-xs">
+        <div className="h-[3px] w-full overflow-hidden rounded-full bg-hairline">
+          <div
+            className="h-full w-1/4 rounded-full animate-track"
+            style={{ backgroundColor: "var(--color-ink)" }}
+          />
+        </div>
+      </div>
+      <p className="mt-8 font-serif text-2xl text-ink">Reading your lease…</p>
+      <p className="mt-2 text-sm text-muted">
+        Going clause by clause. This usually takes a few seconds.
+      </p>
+    </div>
+  );
+}
+
+function ResultsHeader({ count }: { count: number }) {
+  const headline =
+    count === 0
+      ? "Nothing stood out."
+      : `We flagged ${count} ${count === 1 ? "item" : "items"} worth reviewing.`;
+  const sub =
+    count === 0
+      ? "This reads like a fairly standard lease. Give it your own read-through, but nothing here raised a flag."
+      : "Most leases are mostly standard. Here's what's worth a moment of your attention, ordered by how much it affects you.";
+
+  return (
+    <div className="mx-auto max-w-2xl px-6 text-center">
+      <Reveal>
+        <h2 className="font-serif text-4xl leading-[1.1] text-ink sm:text-5xl">
+          {headline}
+        </h2>
+        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-muted">
+          {sub}
+        </p>
+      </Reveal>
+      {count > 0 && (
+        <Reveal delay={120}>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            {SEVERITY_ORDER.map((s) => (
+              <span
+                key={s}
+                className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-muted"
+              >
+                <span
+                  className="size-2 rounded-full"
+                  style={{ backgroundColor: SEVERITY_META[s].color }}
+                  aria-hidden
+                />
+                {SEVERITY_META[s].label}
+              </span>
+            ))}
+          </div>
+        </Reveal>
+      )}
+    </div>
+  );
+}
+
+export function LeaseReviewer() {
+  const [leaseText, setLeaseText] = useState("");
+  const [flags, setFlags] = useState<LeaseFlag[]>([]);
+  const [status, setStatus] = useState<Status>("idle");
+
+  const heroRef = useRef<HTMLElement>(null);
+  const outputRef = useRef<HTMLElement>(null);
+
+  const scrollTo = useCallback((el: HTMLElement | null) => {
+    if (!el) return;
+    requestAnimationFrame(() =>
+      el.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+  }, []);
+
+  // Scroll to the output region once it has actually mounted for the new
+  // status — reading the ref synchronously in the handler would see null,
+  // since the section only renders after the state update commits.
+  useEffect(() => {
+    if (status === "loading" || status === "done" || status === "error") {
+      scrollTo(outputRef.current);
+    }
+  }, [status, scrollTo]);
+
+  const handleReview = useCallback(async () => {
+    if (leaseText.trim().length === 0) return;
+    setStatus("loading");
+    setFlags([]);
+
+    try {
+      const res = await fetch("/api/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leaseText }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Something went wrong.");
+      setFlags(data as LeaseFlag[]);
+      setStatus("done");
+    } catch {
+      setStatus("error");
+    }
+  }, [leaseText]);
+
+  const reset = useCallback(() => {
+    setStatus("idle");
+    setFlags([]);
+    scrollTo(heroRef.current);
+  }, [scrollTo]);
+
+  return (
+    <main>
+      {/* 1 — Hero */}
+      <section
+        ref={heroRef}
+        className="flex min-h-screen flex-col items-center justify-center bg-paper px-6 py-20"
+      >
+        <div className="w-full max-w-2xl">
+          <h1 className="text-center font-serif text-[3.25rem] font-light leading-[1.04] tracking-[-0.02em] text-ink sm:text-7xl">
+            Know what you&rsquo;re signing.
+          </h1>
+          <p className="mx-auto mt-6 max-w-md text-center text-lg leading-8 text-muted">
+            Paste your lease. See the clauses worth reviewing, explained in
+            plain English — so you can sign with a clear head.
+          </p>
+
+          <div className="mt-12">
+            <Textarea
+              value={leaseText}
+              onChange={(e) => setLeaseText(e.target.value)}
+              placeholder="Paste your lease here…"
+              rows={9}
+              aria-label="Lease text"
+              className="min-h-52"
+            />
+            <Button
+              size="lg"
+              onClick={handleReview}
+              disabled={status === "loading" || leaseText.trim().length === 0}
+              className="mt-4 w-full"
+            >
+              {status === "loading" ? "Reading…" : "Review my lease"}
+            </Button>
+            <p className="mt-5 text-center text-sm text-muted/80">
+              {DISCLAIMER}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 2 & 3 — Analyzing / Results */}
+      {status !== "idle" && (
+        <section ref={outputRef} className="min-h-screen bg-canvas">
+          {status === "loading" && <Analyzing />}
+
+          {status === "error" && (
+            <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+              <div className="max-w-md">
+                <h2 className="font-serif text-3xl text-ink">
+                  That one didn&rsquo;t go through.
+                </h2>
+                <p className="mt-4 leading-8 text-muted">
+                  We couldn&rsquo;t read this lease just now — it sometimes takes
+                  a second try. Your text is still here.
+                </p>
+                <Button onClick={handleReview} className="mt-8">
+                  Try again
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {status === "done" && (
+            <div className="bg-canvas py-24 sm:py-32">
+              <ResultsHeader count={flags.length} />
+
+              {flags.length > 0 && (
+                <div className="mx-auto mt-16 flex max-w-2xl flex-col gap-6 px-6">
+                  {flags.map((flag, i) => (
+                    <FlagCard key={i} flag={flag} index={i} />
+                  ))}
+                </div>
+              )}
+
+              <div className="mx-auto mt-20 max-w-2xl px-6 text-center">
+                <Button variant="link" onClick={reset}>
+                  Review another lease
+                </Button>
+                <p className="mt-10 border-t border-hairline pt-8 text-sm text-muted/80">
+                  {DISCLAIMER}
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+    </main>
+  );
+}
