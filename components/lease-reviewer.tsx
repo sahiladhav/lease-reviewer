@@ -45,6 +45,80 @@ const SEVERITY_META: Record<
 
 const SEVERITY_ORDER: Severity[] = ["High", "Medium", "Low"];
 
+const PDF_NOT_A_PDF =
+  "That doesn't look like a PDF. Upload a .pdf file, or paste your lease text below.";
+const PDF_UNREADABLE =
+  "We couldn't read text from this file — it may be a scanned image. Please paste your lease text instead.";
+const PDF_FAILED =
+  "We couldn't open this PDF. Please paste your lease text instead.";
+
+type PdfNotice = { tone: "info" | "warn"; text: string };
+
+function isPdfFile(file: File): boolean {
+  return (
+    file.type === "application/pdf" || /\.pdf$/i.test(file.name.trim())
+  );
+}
+
+// Digital PDFs yield real text; scanned images yield little or none. Treat a
+// result as usable only if there's a meaningful amount of it and it's mostly
+// letters (guards against garbled extraction from image-only files).
+function looksReadable(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length < 60) return false;
+  const letters = (trimmed.match(/[A-Za-z]/g) ?? []).length;
+  if (letters < 40) return false;
+  return letters / trimmed.length >= 0.15;
+}
+
+async function extractTextFromPdf(
+  file: File
+): Promise<{ text: string; pages: number }> {
+  const pdfjs = await import("pdfjs-dist");
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
+  const data = await file.arrayBuffer();
+  const doc = await pdfjs.getDocument({ data }).promise;
+
+  let text = "";
+  for (let page = 1; page <= doc.numPages; page++) {
+    const content = await (await doc.getPage(page)).getTextContent();
+    const line = content.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ");
+    text += line + "\n\n";
+  }
+
+  // Collapse the ragged spacing pdf.js produces between glyphs/lines so the
+  // text is readable in the textarea before the user submits it.
+  const normalized = text
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return { text: normalized, pages: doc.numPages };
+}
+
+function UploadIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 15V4" />
+      <path d="m8 8 4-4 4 4" />
+      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+    </svg>
+  );
+}
+
 /* Fade-and-rise wrapper, triggered once as it scrolls into view. */
 function Reveal({
   children,
@@ -203,9 +277,12 @@ export function LeaseReviewer() {
   const [leaseText, setLeaseText] = useState("");
   const [flags, setFlags] = useState<LeaseFlag[]>([]);
   const [status, setStatus] = useState<Status>("idle");
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfNotice, setPdfNotice] = useState<PdfNotice | null>(null);
 
   const heroRef = useRef<HTMLElement>(null);
   const outputRef = useRef<HTMLElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollTo = useCallback((el: HTMLElement | null) => {
     if (!el) return;
@@ -249,6 +326,34 @@ export function LeaseReviewer() {
     scrollTo(heroRef.current);
   }, [scrollTo]);
 
+  const handleFile = useCallback(async (file: File | undefined) => {
+    if (!file) return;
+
+    if (!isPdfFile(file)) {
+      setPdfNotice({ tone: "warn", text: PDF_NOT_A_PDF });
+      return;
+    }
+
+    setPdfBusy(true);
+    setPdfNotice(null);
+    try {
+      const { text, pages } = await extractTextFromPdf(file);
+      if (!looksReadable(text)) {
+        setPdfNotice({ tone: "warn", text: PDF_UNREADABLE });
+        return;
+      }
+      setLeaseText(text);
+      setPdfNotice({
+        tone: "info",
+        text: `Loaded ${pages} ${pages === 1 ? "page" : "pages"} from ${file.name}. Review it below, then run the review.`,
+      });
+    } catch {
+      setPdfNotice({ tone: "warn", text: PDF_FAILED });
+    } finally {
+      setPdfBusy(false);
+    }
+  }, []);
+
   return (
     <main>
       {/* 1 — Hero */}
@@ -266,6 +371,28 @@ export function LeaseReviewer() {
           </p>
 
           <div className="mt-12">
+            <div className="mb-3 flex items-center justify-end">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                  handleFile(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={pdfBusy}
+              >
+                <UploadIcon className="size-4" />
+                {pdfBusy ? "Reading PDF…" : "Upload a PDF"}
+              </Button>
+            </div>
+
             <Textarea
               value={leaseText}
               onChange={(e) => setLeaseText(e.target.value)}
@@ -274,6 +401,26 @@ export function LeaseReviewer() {
               aria-label="Lease text"
               className="min-h-52"
             />
+
+            {pdfNotice && (
+              <p
+                role="status"
+                className="mt-3 flex items-start gap-2.5 rounded-xl border border-hairline bg-card px-4 py-3 text-sm leading-6 text-muted"
+              >
+                <span
+                  className="mt-2 size-1.5 shrink-0 rounded-full"
+                  style={{
+                    backgroundColor:
+                      pdfNotice.tone === "info"
+                        ? "var(--color-sage)"
+                        : "var(--color-amber)",
+                  }}
+                  aria-hidden
+                />
+                {pdfNotice.text}
+              </p>
+            )}
+
             <Button
               size="lg"
               onClick={handleReview}
