@@ -388,8 +388,10 @@ export function LeaseReviewer() {
           <h1 className="mx-auto mt-6 max-w-3xl text-center font-serif text-4xl font-light leading-[1.05] tracking-[-0.02em] text-ink sm:text-6xl">
             Know what you&rsquo;re signing.
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-center text-base leading-7 text-muted sm:text-lg">
-            See which clauses are worth a closer look — in plain English, before
+          <p className="mx-auto mt-4 max-w-2xl text-center text-base leading-7 text-muted sm:text-lg">
+            Paste your lease text or upload the PDF. You&rsquo;ll get the clauses
+            worth a closer look — deposit, entry, repairs, fees — each explained
+            in plain English, with why it matters and a question to ask before
             you sign.
           </p>
           <HeroArt className="mx-auto mt-8 w-full max-w-2xl" />
