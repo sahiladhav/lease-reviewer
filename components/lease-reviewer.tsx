@@ -46,7 +46,7 @@ const SEVERITY_META: Record<
 const SEVERITY_ORDER: Severity[] = ["High", "Medium", "Low"];
 
 const PDF_NOT_A_PDF =
-  "That doesn't look like a PDF. Upload a .pdf file, or paste your lease text below.";
+  "That doesn't look like a PDF. Upload a .pdf file, or paste your lease text instead.";
 const PDF_UNREADABLE =
   "We couldn't read text from this file — it may be a scanned image. Please paste your lease text instead.";
 const PDF_FAILED =
@@ -55,9 +55,7 @@ const PDF_FAILED =
 type PdfNotice = { tone: "info" | "warn"; text: string };
 
 function isPdfFile(file: File): boolean {
-  return (
-    file.type === "application/pdf" || /\.pdf$/i.test(file.name.trim())
-  );
+  return file.type === "application/pdf" || /\.pdf$/i.test(file.name.trim());
 }
 
 // Digital PDFs yield real text; scanned images yield little or none. Treat a
@@ -89,8 +87,7 @@ async function extractTextFromPdf(
     text += line + "\n\n";
   }
 
-  // Collapse the ragged spacing pdf.js produces between glyphs/lines so the
-  // text is readable in the textarea before the user submits it.
+  // Collapse the ragged spacing pdf.js produces between glyphs/lines.
   const normalized = text
     .replace(/[ \t]{2,}/g, " ")
     .replace(/ *\n */g, "\n")
@@ -119,6 +116,41 @@ function UploadIcon({ className }: { className?: string }) {
   );
 }
 
+// Editorial line-art arcade — soft, architectural, not a stock photo.
+function HeroArt({ className }: { className?: string }) {
+  const columns = [140, 308, 476, 644, 812, 980];
+  const springY = 150;
+  const baseY = 224;
+  const r = 84;
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 1120 260"
+      role="img"
+      aria-label="Illustration of an arched colonnade"
+      style={{ color: "var(--color-ink)" }}
+    >
+      <circle cx="560" cy="116" r="140" fill="var(--color-sage)" opacity="0.07" />
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeOpacity="0.4"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      >
+        {columns.slice(0, -1).map((x) => (
+          <path key={`arch-${x}`} d={`M${x} ${springY} A${r} ${r} 0 0 1 ${x + 168} ${springY}`} />
+        ))}
+        {columns.map((x) => (
+          <path key={`col-${x}`} d={`M${x} ${springY} L${x} ${baseY}`} />
+        ))}
+        <path d={`M104 ${baseY} L1016 ${baseY}`} />
+        <path d="M88 238 L1032 238" strokeOpacity="0.25" />
+      </g>
+    </svg>
+  );
+}
+
 /* Fade-and-rise wrapper, triggered once as it scrolls into view. */
 function Reveal({
   children,
@@ -142,7 +174,7 @@ function Reveal({
           observer.disconnect();
         }
       },
-      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
+      { threshold: 0.1, rootMargin: "0px 0px -6% 0px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -160,61 +192,70 @@ function Reveal({
   );
 }
 
-function SeverityTag({ severity }: { severity: Severity }) {
-  const meta = SEVERITY_META[severity];
-  return (
-    <span className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-muted">
-      <span
-        className="size-2 rounded-full"
-        style={{ backgroundColor: meta.color }}
-        aria-hidden
-      />
-      {meta.label}
-    </span>
-  );
-}
-
-function FlagField({ label, children }: { label: string; children: string }) {
-  return (
-    <div>
-      <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
-        {label}
-      </p>
-      <p className="text-[1.0625rem] leading-8 text-body">{children}</p>
-    </div>
-  );
-}
-
+// Condensed, scannable flag: title + severity dot up top, three short lines.
 function FlagCard({ flag, index }: { flag: LeaseFlag; index: number }) {
   const meta = SEVERITY_META[flag.severity];
   return (
-    <Reveal delay={Math.min(index, 5) * 70}>
+    <Reveal delay={Math.min(index, 6) * 55}>
       <article
-        className="rounded-3xl border border-hairline bg-card p-8 shadow-[0_1px_2px_rgba(33,29,24,0.03)] sm:p-10"
+        className="rounded-2xl border border-hairline bg-card p-5 shadow-[0_1px_2px_rgba(33,29,24,0.03)]"
         style={{ borderLeft: `3px solid ${meta.color}` }}
       >
-        <header className="mb-6 flex flex-col gap-3 border-b border-hairline pb-6">
-          <SeverityTag severity={flag.severity} />
-          <h3 className="font-serif text-2xl leading-tight text-ink sm:text-[1.75rem]">
+        <div className="mb-2.5 flex items-center gap-2.5">
+          <span
+            className="size-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: meta.color }}
+            aria-hidden
+          />
+          <h3 className="font-serif text-lg leading-snug text-ink">
             {flag.clause}
           </h3>
-        </header>
-        <div className="flex flex-col gap-6">
-          <FlagField label="In plain English">{flag.plainEnglish}</FlagField>
-          <FlagField label="Why it matters to you">
-            {flag.whyItMatters}
-          </FlagField>
-          <FlagField label="A question to ask">{flag.questionToAsk}</FlagField>
+          <span className="ml-auto shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+            {meta.note}
+          </span>
         </div>
+        <dl className="space-y-1.5 text-sm leading-6">
+          <div>
+            <dt className="inline font-medium text-ink">In plain English. </dt>
+            <dd className="inline text-body">{flag.plainEnglish}</dd>
+          </div>
+          <div>
+            <dt className="inline font-medium text-ink">Why it matters. </dt>
+            <dd className="inline text-body">{flag.whyItMatters}</dd>
+          </div>
+          <div>
+            <dt className="inline font-medium text-ink">Question to ask. </dt>
+            <dd className="inline text-body">{flag.questionToAsk}</dd>
+          </div>
+        </dl>
       </article>
     </Reveal>
   );
 }
 
+function PanelShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-[340px] flex-col items-center justify-center rounded-2xl border border-hairline bg-card px-6 py-16 text-center">
+      {children}
+    </div>
+  );
+}
+
+function ResultsIdle() {
+  return (
+    <div className="flex min-h-[340px] flex-col items-center justify-center rounded-2xl border border-dashed border-hairline px-6 py-16 text-center">
+      <p className="font-serif text-xl text-ink">Your review will appear here.</p>
+      <p className="mt-2 max-w-[16rem] text-sm leading-6 text-muted">
+        Paste your lease or upload a PDF, then run the review.
+      </p>
+    </div>
+  );
+}
+
 function Analyzing() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <div className="w-full max-w-xs">
+    <PanelShell>
+      <div className="w-full max-w-[220px]">
         <div className="h-[3px] w-full overflow-hidden rounded-full bg-hairline">
           <div
             className="h-full w-1/4 rounded-full animate-track"
@@ -222,11 +263,11 @@ function Analyzing() {
           />
         </div>
       </div>
-      <p className="mt-8 font-serif text-2xl text-ink">Reading your lease…</p>
-      <p className="mt-2 text-sm text-muted">
-        Going clause by clause. This usually takes a few seconds.
+      <p className="mt-6 font-serif text-xl text-ink">Reading your lease…</p>
+      <p className="mt-1.5 text-sm text-muted">
+        Going clause by clause — a few seconds.
       </p>
-    </div>
+    </PanelShell>
   );
 }
 
@@ -237,37 +278,31 @@ function ResultsHeader({ count }: { count: number }) {
       : `We flagged ${count} ${count === 1 ? "item" : "items"} worth reviewing.`;
   const sub =
     count === 0
-      ? "This reads like a fairly standard lease. Give it your own read-through, but nothing here raised a flag."
-      : "Most leases are mostly standard. Here's what's worth a moment of your attention, ordered by how much it affects you.";
+      ? "This reads like a standard lease — but give it your own read."
+      : "Ordered by how much each one affects you.";
 
   return (
-    <div className="mx-auto max-w-2xl px-6 text-center">
-      <Reveal>
-        <h2 className="font-serif text-4xl leading-[1.1] text-ink sm:text-5xl">
-          {headline}
-        </h2>
-        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-muted">
-          {sub}
-        </p>
-      </Reveal>
+    <div>
+      <h2 className="font-serif text-2xl leading-tight text-ink sm:text-3xl">
+        {headline}
+      </h2>
+      <p className="mt-2 text-sm text-muted">{sub}</p>
       {count > 0 && (
-        <Reveal delay={120}>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            {SEVERITY_ORDER.map((s) => (
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          {SEVERITY_ORDER.map((s) => (
+            <span
+              key={s}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted"
+            >
               <span
-                key={s}
-                className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-muted"
-              >
-                <span
-                  className="size-2 rounded-full"
-                  style={{ backgroundColor: SEVERITY_META[s].color }}
-                  aria-hidden
-                />
-                {SEVERITY_META[s].label}
-              </span>
-            ))}
-          </div>
-        </Reveal>
+                className="size-2 rounded-full"
+                style={{ backgroundColor: SEVERITY_META[s].color }}
+                aria-hidden
+              />
+              {SEVERITY_META[s].label}
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -286,25 +321,19 @@ export function LeaseReviewer() {
   const effectiveText = leaseText.trim().length > 0 ? leaseText : pdfText;
   const canReview = effectiveText.trim().length > 0;
 
-  const heroRef = useRef<HTMLElement>(null);
-  const outputRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
-  const scrollTo = useCallback((el: HTMLElement | null) => {
-    if (!el) return;
-    requestAnimationFrame(() =>
-      el.scrollIntoView({ behavior: "smooth", block: "start" })
-    );
-  }, []);
-
-  // Scroll to the output region once it has actually mounted for the new
-  // status — reading the ref synchronously in the handler would see null,
-  // since the section only renders after the state update commits.
+  // On narrow screens the results sit below the input, so bring them into view
+  // on submit. On desktop the panel is already beside the input — leave it.
   useEffect(() => {
-    if (status === "loading" || status === "done" || status === "error") {
-      scrollTo(outputRef.current);
+    if (status === "idle") return;
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      requestAnimationFrame(() =>
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      );
     }
-  }, [status, scrollTo]);
+  }, [status]);
 
   const handleReview = useCallback(async () => {
     const text = effectiveText;
@@ -330,10 +359,11 @@ export function LeaseReviewer() {
   const reset = useCallback(() => {
     setStatus("idle");
     setFlags([]);
+    setLeaseText("");
     setPdfText("");
     setPdfNotice(null);
-    scrollTo(heroRef.current);
-  }, [scrollTo]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   const handleFile = useCallback(async (file: File | undefined) => {
     if (!file) return;
@@ -354,7 +384,7 @@ export function LeaseReviewer() {
       setPdfText(text);
       setPdfNotice({
         tone: "info",
-        text: `${file.name} loaded (${pages} ${pages === 1 ? "page" : "pages"}). Hit "Review my lease" to analyze it — or paste text above to use that instead.`,
+        text: `${file.name} loaded (${pages} ${pages === 1 ? "page" : "pages"}). Run the review to analyze it.`,
       });
     } catch {
       setPdfNotice({ tone: "warn", text: PDF_FAILED });
@@ -364,23 +394,29 @@ export function LeaseReviewer() {
   }, []);
 
   return (
-    <main>
-      {/* 1 — Hero */}
-      <section
-        ref={heroRef}
-        className="flex min-h-screen flex-col items-center justify-center bg-paper px-6 py-20"
-      >
-        <div className="w-full max-w-2xl">
-          <h1 className="text-center font-serif text-[3.25rem] font-light leading-[1.04] tracking-[-0.02em] text-ink sm:text-7xl">
+    <main className="min-h-screen bg-canvas">
+      {/* Compact hero */}
+      <header className="bg-paper">
+        <div className="mx-auto max-w-5xl px-6 pt-6 pb-10">
+          <p className="text-center text-xs text-muted/70">{DISCLAIMER}</p>
+          <h1 className="mx-auto mt-6 max-w-3xl text-center font-serif text-4xl font-light leading-[1.05] tracking-[-0.02em] text-ink sm:text-6xl">
             Know what you&rsquo;re signing.
           </h1>
-          <p className="mx-auto mt-6 max-w-md text-center text-lg leading-8 text-muted">
-            Paste your lease. See the clauses worth reviewing, explained in
-            plain English — so you can sign with a clear head.
+          <p className="mx-auto mt-4 max-w-xl text-center text-base leading-7 text-muted sm:text-lg">
+            See which clauses are worth a closer look — in plain English, before
+            you sign.
           </p>
+          <HeroArt className="mx-auto mt-8 w-full max-w-2xl" />
+        </div>
+      </header>
 
-          <div className="mt-12">
-            <div className="mb-3 flex items-center justify-end">
+      {/* Two-column workspace: input (left) · results (right) */}
+      <section className="mx-auto max-w-6xl px-6 py-12">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-12">
+          {/* Left — input */}
+          <div className="lg:sticky lg:top-8">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-medium text-ink">Your lease</span>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -406,9 +442,9 @@ export function LeaseReviewer() {
               value={leaseText}
               onChange={(e) => setLeaseText(e.target.value)}
               placeholder="Paste your lease here…"
-              rows={9}
+              rows={12}
               aria-label="Lease text"
-              className="min-h-52"
+              className="min-h-64"
             />
 
             {pdfNotice && (
@@ -438,59 +474,55 @@ export function LeaseReviewer() {
             >
               {status === "loading" ? "Reading…" : "Review my lease"}
             </Button>
-            <p className="mt-5 text-center text-sm text-muted/80">
-              {DISCLAIMER}
-            </p>
+          </div>
+
+          {/* Right — results, scrolls with the page while input stays put */}
+          <div ref={resultsRef} className="mt-10 lg:mt-0">
+            {status === "idle" && <ResultsIdle />}
+            {status === "loading" && <Analyzing />}
+
+            {status === "error" && (
+              <PanelShell>
+                <h2 className="font-serif text-xl text-ink">
+                  That didn&rsquo;t go through.
+                </h2>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
+                  We couldn&rsquo;t read this lease just now — it sometimes takes
+                  a second try.
+                </p>
+                <Button onClick={handleReview} size="sm" className="mt-6">
+                  Try again
+                </Button>
+              </PanelShell>
+            )}
+
+            {status === "done" && (
+              <div>
+                <ResultsHeader count={flags.length} />
+                {flags.length > 0 && (
+                  <div className="mt-6 flex flex-col gap-4">
+                    {flags.map((flag, i) => (
+                      <FlagCard key={i} flag={flag} index={i} />
+                    ))}
+                  </div>
+                )}
+                <div className="mt-8">
+                  <Button variant="link" size="sm" onClick={reset}>
+                    Review another lease
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* 2 & 3 — Analyzing / Results */}
-      {status !== "idle" && (
-        <section ref={outputRef} className="min-h-screen bg-canvas">
-          {status === "loading" && <Analyzing />}
-
-          {status === "error" && (
-            <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-              <div className="max-w-md">
-                <h2 className="font-serif text-3xl text-ink">
-                  That one didn&rsquo;t go through.
-                </h2>
-                <p className="mt-4 leading-8 text-muted">
-                  We couldn&rsquo;t read this lease just now — it sometimes takes
-                  a second try. Your text is still here.
-                </p>
-                <Button onClick={handleReview} className="mt-8">
-                  Try again
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {status === "done" && (
-            <div className="bg-canvas py-24 sm:py-32">
-              <ResultsHeader count={flags.length} />
-
-              {flags.length > 0 && (
-                <div className="mx-auto mt-16 flex max-w-2xl flex-col gap-6 px-6">
-                  {flags.map((flag, i) => (
-                    <FlagCard key={i} flag={flag} index={i} />
-                  ))}
-                </div>
-              )}
-
-              <div className="mx-auto mt-20 max-w-2xl px-6 text-center">
-                <Button variant="link" onClick={reset}>
-                  Review another lease
-                </Button>
-                <p className="mt-10 border-t border-hairline pt-8 text-sm text-muted/80">
-                  {DISCLAIMER}
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
-      )}
+      {/* Bottom disclaimer */}
+      <footer className="border-t border-hairline">
+        <p className="mx-auto max-w-6xl px-6 py-8 text-center text-sm text-muted/80">
+          {DISCLAIMER}
+        </p>
+      </footer>
     </main>
   );
 }
